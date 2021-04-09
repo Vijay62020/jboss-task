@@ -1,0 +1,42 @@
+job('JBOSS_DEPLOYMENT') {
+    description('Designed the job through docker file')
+  
+  scm {
+        github(ownerAndProject='Vijay62020/jboss-task')
+    }
+  
+  steps {
+        publishOverSsh {
+            server('Jenkins') {
+              transferSet {
+                 execCommand("cd /var/lib/jenkins/workspace/JBOSS_DEPLOYMENT  && rsync -avh Dockerfile jboss-as-helloworld.war root@192.168.1.14:/root/jbossfuse")
+            }
+        }
+    }
+  }
+  
+  steps {
+        publishOverSsh {
+            server('Ansible') {
+              transferSet {
+                execCommand("cd /root/jbossfuse && docker image build -t jbossfuse:v1.$BUILD_ID . &&  docker image tag jbossfuse:v1.$BUILD_ID  vijay62020/jbossfuse:v1.$BUILD_ID && docker image tag jbossfuse:v1.$BUILD_ID vijay62020/jbossfuse:latest && docker image push vijay62020/jbossfuse:v1.$BUILD_ID && docker image push vijay62020/jbossfuse:latest && docker image rmi jbossfuse:v1.$BUILD_ID  vijay62020/jbossfuse:v1.$BUILD_ID  vijay62020/jbossfuse:latest")
+                execTimeout(1800000)
+            }
+              
+        }
+    }
+  }
+  
+steps {
+    publishers {
+        publishOverSsh {
+            server('Ansible') {
+                     transferSet {
+                            execCommand("ansible-playbook /root/jbossfuse/jbossfuse.yml")
+                }
+            }
+        }
+    }
+  }
+  
+}
